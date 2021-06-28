@@ -55,11 +55,13 @@ class HDMI_SCALER:
 
 
 class Blackbird:
-    def __init__(self, url, port=DEFAULT_PORT, timeout=DEFAULT_TIMEOUT):
+    def __init__(self, url=None, port=DEFAULT_PORT, timeout=DEFAULT_TIMEOUT):
         self.url = url
         self.port = port
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connection.timeout(timeout)
+        self.connection.settimeout(timeout)
+        if self.url:
+            self.connect()
 
     def connect(self, url=None, port=None):
         url = url or self.url
@@ -67,7 +69,6 @@ class Blackbird:
 
         assert isinstance(port, int), 'port provided must be integer'
         self.connection.connect((url, port))
-        self.connection.recv(SOCKET_RECV)
 
     def send_command(self, cmd):
         self.connection.send(cmd.encode())
@@ -77,7 +78,7 @@ class Blackbird:
             try:
                 resp = self.connection.recv(SOCKET_RECV)
                 response += resp.decode('utf-8')
-            except socket.socket.timeout:
+            except socket.timeout:
                 break
 
         return response
@@ -88,10 +89,13 @@ class Blackbird:
     def send_system_command(self, cmd):
         return self.send_command(SYSTEM_COMMAND.format(cmd))
 
+    def help(self):
+        return self.send_command('help!')
+
     def set_power(self, on=True):
         return self.send_system_command(f'power {int(on)}')
 
-    def report_power(self):
+    def get_power(self):
         return self.send_report_command('power')
 
     def reboot(self):
@@ -122,10 +126,13 @@ class Blackbird:
     def set_beep(self, on=True):
         return self.send_system_command(f'beep {int(on)}')
 
+    def get_beep_status(self):
+        return self.send_report_command('beep')
+
     def set_button_lock(self, on=True):
         return self.send_system_command(f'lock {int(on)}')
 
-    def button_lock_status(self):
+    def get_button_lock_status(self):
         return self.send_report_command('lock')
 
     def save_preset(self, num):
